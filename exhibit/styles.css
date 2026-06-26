@@ -1,0 +1,50 @@
+/* Clean, readable research-exhibit typography */
+body {
+  font-size: 1.02rem;
+  line-height: 1.65;
+  color: #1f2329;
+}
+.quarto-title-block .quarto-title .title {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+#quarto-content main {
+  max-width: 860px;
+}
+h2 {
+  margin-top: 2.4rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid #ececec;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+}
+h3 { margin-top: 1.6rem; font-weight: 600; }
+
+/* Lead abstract paragraph */
+.lead {
+  font-size: 1.18rem;
+  line-height: 1.6;
+  color: #2b2f36;
+  border-left: 3px solid #2c6e9b;
+  padding-left: 1rem;
+  margin: 1.2rem 0 1.6rem 0;
+}
+.takeaway {
+  background: #f4f8fb;
+  border: 1px solid #d8e6ef;
+  border-radius: 8px;
+  padding: 0.9rem 1.1rem;
+  margin: 1.2rem 0;
+}
+.takeaway strong { color: #1c4f73; }
+
+table { font-size: 0.93rem; }
+caption, .figure-caption { color: #666; font-size: 0.86rem; }
+
+.footnote-source {
+  font-size: 0.86rem;
+  color: #5a5f66;
+  border-top: 1px solid #ececec;
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+}

@@ -1,0 +1,363 @@
+---
+title: "Does money-supply growth move Bitcoin and gold?"
+subtitle: "A regime-dependent VAR study — and a null result that survives a power test"
+date: 2026-06-26
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-location: left
+    toc-title: "On this page"
+    toc-depth: 3
+    theme: cosmo
+    css: styles.css
+    code-fold: true
+    code-tools: false
+    fig-responsive: true
+jupyter: python3
+execute:
+  echo: false
+  warning: false
+  cache: false
+---
+
+```{python}
+#| label: setup
+import json, os
+import numpy as np
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.io as pio
+pio.templates.default = "plotly_white"
+
+with open(os.path.join("data", "results.json")) as f:
+    R = json.load(f)
+
+MONTHS = R["months"]
+META = R["meta"]
+HEAD = R["headline"]
+ALPHA = 0.05
+
+ACCENT = "#2c6e9b"
+BTC_C = "#f2a900"
+GOLD_C = "#b8860b"
+GREY = "#9aa0a6"
+
+def band(fig, x, lo, hi, color, row=None, col=None, name="95% band", show=True):
+    rgba = f"rgba({int(color[1:3],16)},{int(color[3:5],16)},{int(color[5:7],16)},0.15)"
+    fig.add_trace(go.Scatter(x=x, y=hi, mode="lines", line=dict(width=0),
+                             hoverinfo="skip", showlegend=False, visible=show),
+                  row=row, col=col)
+    fig.add_trace(go.Scatter(x=x, y=lo, mode="lines", line=dict(width=0),
+                             fill="tonexty", fillcolor=rgba, name=name,
+                             hoverinfo="skip", showlegend=False, visible=show),
+                  row=row, col=col)
+```
+
+::: {.lead}
+Popular commentary treats "money printing" as the master switch for Bitcoin and gold: when the money supply expands, the story goes, these assets must rise. This study tests that claim directly with monetary and market data back to 2000. **The answer is no — at monthly frequency, money-supply growth has no statistically measurable effect on Bitcoin or gold returns**, in normal markets or in financial-stress periods. The single most promising lead — that gold reacts to money growth specifically during stress — weakened when subjected to a pre-committed test with more data, the signature of a chance finding, not a real effect.
+:::
+
+## The question
+
+A widespread assumption in markets is that liquidity is destiny for "hard" and digital stores of value: grow the money supply and Bitcoin and gold should follow. That intuition is rarely tested formally on the actual time series. This exhibit asks a precise version of it — **does the growth rate of the U.S. M2 money supply lead the monthly returns of Bitcoin and gold?** — and, because such relationships are often said to appear only in turbulent markets, it asks the question separately in calm and in financial-stress regimes.
+
+## What I found
+
+The headline is a clean null, and the most informative single picture is what happened to the *one* result that initially looked promising. In the Bitcoin-limited sample (which starts in 2014 and therefore excludes the 2008 crisis), money growth appeared to lead gold during stress with borderline significance. The study had pre-committed to re-test that lead on gold's full history back to 2000 — tripling the number of stress months and adding the 2008 and 2011 crises. A real effect should get *stronger* with more data. It got weaker.
+
+```{python}
+#| label: fig-headline
+labels = HEAD["thresholds"]
+bl = HEAD["gold_stress_granger_p"]["btc_limited"]
+ex = HEAD["gold_stress_granger_p"]["extended"]
+nbl = HEAD["stress_n"]["btc_limited"]
+nex = HEAD["stress_n"]["extended"]
+
+xcats = ["BTC-limited sample<br><sub>2014– · excludes 2008 · fewer stress months</sub>",
+         "Extended gold sample<br><sub>2000– · includes 2008 & 2011 · more stress months</sub>"]
+
+fig = go.Figure()
+# significance zone
+fig.add_hrect(y0=0, y1=ALPHA, fillcolor="rgba(40,120,80,0.07)", line_width=0,
+              annotation_text="significant (p < 0.05)", annotation_position="bottom left",
+              annotation_font_size=11, annotation_font_color="#2e7d52")
+fig.add_hline(y=ALPHA, line_dash="dash", line_color="#2e7d52", line_width=1)
+
+styles = {"A: >0": dict(color=ACCENT, width=4, primary=True),
+          "B: >75th pct": dict(color="#6aa3c4", width=2, primary=False),
+          "C: >mean+1SD": dict(color=GREY, width=1.5, primary=False),
+          "D: >0.15": dict(color="#8fb8d0", width=2, primary=False)}
+
+for i, lab in enumerate(labels):
+    st = styles.get(lab, dict(color=GREY, width=2, primary=False))
+    note = " (primary)" if st["primary"] else ""
+    cnote = "  ⚠ only 9 / 26 months" if lab.startswith("C") else ""
+    fig.add_trace(go.Scatter(
+        x=xcats, y=[bl[i], ex[i]], mode="lines+markers",
+        name=lab + note,
+        line=dict(color=st["color"], width=st["width"],
+                  dash="dot" if lab.startswith("C") else "solid"),
+        marker=dict(size=11 if st["primary"] else 8),
+        hovertemplate=("<b>%{x}</b><br>threshold " + lab + cnote +
+                       "<br>Granger p = %{y:.3f}<extra></extra>")))
+
+fig.add_annotation(x=1, y=ex[0], ax=0, ay=bl[0], xref="x", yref="y",
+                   axref="x", ayref="y", showarrow=True, arrowhead=2,
+                   arrowwidth=2, arrowcolor=ACCENT, opacity=0.0)
+fig.add_annotation(x=0.5, y=0.55, xref="paper", yref="paper",
+                   text="↑ higher = <b>weaker</b> effect<br>more data made it weaker",
+                   showarrow=False, font=dict(size=13, color="#444"),
+                   bgcolor="rgba(255,255,255,0.7)")
+
+fig.update_layout(
+    title="Does money growth lead gold in stress? The p-value rises as power grows",
+    yaxis_title="Granger p-value  (M2 → gold, stress regime)",
+    yaxis=dict(range=[0, 0.85]),
+    height=460, legend=dict(orientation="h", y=-0.18),
+    margin=dict(l=70, r=30, t=60, b=90))
+fig.show()
+```
+
+::: {.takeaway}
+**How to read it.** Each line is one way of defining a "stress" month. The vertical axis is a p-value: **lower means stronger evidence of an effect; the green zone (below 0.05) is the conventional bar for "statistically significant."** Moving left to right adds data and statistical power. If money growth genuinely drove gold in stress, the lines should fall *into* the green zone as power increases. Instead they rise *away* from it. The primary definition (blue) goes from p = 0.086 to p = 0.306. The lead did not survive the test.
+:::
+
+The same null holds everywhere else we looked:
+
+- **Full sample, all assets:** money growth does not lead Bitcoin (p = 0.16) or gold (p = 0.27).
+- **Calm vs. stress, Bitcoin-limited:** no significant effect on either asset in either regime.
+- **Across four different stress thresholds and both samples:** out of twelve tests, zero produced a confidence interval that excludes zero.
+
+## How I tested it
+
+In plain terms, the method has four moves:
+
+1. **Work in changes, not levels.** Money supply, Bitcoin, and gold all drift upward over time. Comparing their *levels* would just compare three rising trends and manufacture a correlation that means nothing. So everything is converted to monthly growth rates / returns, which removes the trend. (We confirmed statistically that the trends are gone after this step.)
+
+2. **Split the timeline into calm and stress months** using a published financial-stress index from the St. Louis Fed. The idea being tested is that money might matter only when markets are tense.
+
+3. **Fit a small dynamic model (a VAR).** This lets each variable depend on the recent past of all the others, so we can isolate whether *past* money growth helps predict *future* returns, over and above the returns' own momentum.
+
+4. **Run an impulse response.** This is the core experiment: *give money-supply growth a one-time jump of typical size, then watch how Bitcoin and gold returns respond over the following 12 months* — with a shaded band showing the range of statistical uncertainty. If the band includes zero throughout, the response is indistinguishable from "no effect."
+
+The sections below show those impulse responses directly, then explain why the null is trustworthy. Full technical specifications are in the appendix.
+
+## Interactive results {#results}
+
+### Impulse responses: calm vs. stress
+
+Response of asset returns to a one-standard-deviation jump in money-supply growth, over 12 months, with 95% confidence bands. Use the buttons to switch between Bitcoin and gold. **In every panel the band straddles the zero line** — the response cannot be distinguished from no effect.
+
+```{python}
+#| label: fig-irf-btclimited
+bl_data = R["btc_limited"]
+fig = make_subplots(rows=1, cols=2, shared_yaxes=True,
+                    subplot_titles=("Calm months", "Stress months"),
+                    horizontal_spacing=0.07)
+
+# trace bookkeeping for the BTC/gold toggle
+trace_asset = []  # 'BTC_ret' or 'GOLD_ret' per trace
+
+def add_asset(asset, color, visible):
+    for col, reg in [(1, "calm"), (2, "stress")]:
+        a = bl_data[reg]["assets"][asset]
+        # band (2 traces)
+        rgba = f"rgba({int(color[1:3],16)},{int(color[3:5],16)},{int(color[5:7],16)},0.15)"
+        fig.add_trace(go.Scatter(x=MONTHS, y=a["irf_hi"], mode="lines",
+                                 line=dict(width=0), hoverinfo="skip",
+                                 showlegend=False, visible=visible), row=1, col=col)
+        trace_asset.append(asset)
+        fig.add_trace(go.Scatter(x=MONTHS, y=a["irf_lo"], mode="lines",
+                                 line=dict(width=0), fill="tonexty", fillcolor=rgba,
+                                 hoverinfo="skip", showlegend=False, visible=visible),
+                      row=1, col=col)
+        trace_asset.append(asset)
+        # point
+        nm = ("Bitcoin" if asset == "BTC_ret" else "Gold")
+        fig.add_trace(go.Scatter(x=MONTHS, y=a["irf"], mode="lines+markers",
+                                 line=dict(color=color, width=2.5),
+                                 marker=dict(size=5), name=f"{nm} ({reg})",
+                                 showlegend=False, visible=visible,
+                                 hovertemplate="month %{x}<br>response %{y:+.2f}%<extra></extra>"),
+                      row=1, col=col)
+        trace_asset.append(asset)
+
+add_asset("BTC_ret", BTC_C, True)
+add_asset("GOLD_ret", GOLD_C, False)
+
+for c in (1, 2):
+    fig.add_hline(y=0, line_color="black", line_width=1, opacity=0.6, row=1, col=c)
+
+vis_btc = [a == "BTC_ret" for a in trace_asset]
+vis_gold = [a == "GOLD_ret" for a in trace_asset]
+
+fig.update_layout(
+    height=440, margin=dict(l=60, r=30, t=70, b=40),
+    title="Response to a 1-SD money-growth shock (BTC-limited sample, 2014–)",
+    updatemenus=[dict(
+        type="buttons", direction="right", x=0.5, y=1.22, xanchor="center",
+        showactive=True, buttons=[
+            dict(label="Bitcoin", method="update",
+                 args=[{"visible": vis_btc},
+                       {"title": "Bitcoin response to a 1-SD money-growth shock (2014–)"}]),
+            dict(label="Gold", method="update",
+                 args=[{"visible": vis_gold},
+                       {"title": "Gold response to a 1-SD money-growth shock (2014–)"}]),
+        ])])
+fig.update_yaxes(title_text="response (%)", row=1, col=1)
+fig.update_xaxes(title_text="months after shock", row=1, col=1)
+fig.update_xaxes(title_text="months after shock", row=1, col=2)
+fig.show()
+```
+
+### The same test on gold's full history
+
+The extended gold-only model (back to 2000, including 2008 and 2011) is where the stress lead was supposed to sharpen. It did not: the stress response is slightly positive but its band comfortably includes zero, and the Granger p-value is 0.31.
+
+```{python}
+#| label: fig-irf-goldext
+gx = R["gold_extended"]
+fig = make_subplots(rows=1, cols=2, shared_yaxes=True,
+                    subplot_titles=(
+                        f"Calm  (n={gx['calm']['n']})",
+                        f"Stress  (n={gx['stress']['n']})"),
+                    horizontal_spacing=0.07)
+for col, reg in [(1, "calm"), (2, "stress")]:
+    a = gx[reg]["assets"]["GOLD_ret"]
+    band(fig, MONTHS, a["irf_lo"], a["irf_hi"], GOLD_C, row=1, col=col)
+    fig.add_trace(go.Scatter(x=MONTHS, y=a["irf"], mode="lines+markers",
+                             line=dict(color=GOLD_C, width=2.5), marker=dict(size=5),
+                             showlegend=False,
+                             hovertemplate="month %{x}<br>response %{y:+.2f}%<extra></extra>"),
+                  row=1, col=col)
+    fig.add_hline(y=0, line_color="black", line_width=1, opacity=0.6, row=1, col=col)
+fig.update_layout(height=430, margin=dict(l=60, r=30, t=60, b=40),
+                  title="Gold response to a 1-SD money-growth shock — extended sample (2000–)")
+fig.update_yaxes(title_text="response (%)", row=1, col=1)
+fig.update_xaxes(title_text="months after shock", row=1, col=1)
+fig.update_xaxes(title_text="months after shock", row=1, col=2)
+fig.show()
+```
+
+### Cumulative 12-month effects
+
+The total return response built up over 12 months, by regime, with bootstrap 95% intervals. Every interval includes zero.
+
+```{python}
+#| label: tbl-cumulative
+import pandas as pd
+from IPython.display import HTML
+rows = []
+name = {"BTC_ret": "Bitcoin", "GOLD_ret": "Gold"}
+for r in R["cumulative_table"]:
+    rows.append({
+        "System": r["system"],
+        "Asset": name[r["asset"]],
+        "Regime": r["regime"].capitalize(),
+        "Cumulative 12-mo effect": f"{r['cum12']:+.2f}%",
+        "95% interval": f"[{r['ci_lo']:+.2f}, {r['ci_hi']:+.2f}]",
+        "Granger p": f"{r['granger_p']:.3f}",
+        "Significant?": "yes" if r["sig"] else "no",
+    })
+df = pd.DataFrame(rows)
+HTML(df.to_html(index=False, escape=False, classes="table table-sm"))
+```
+
+## Why I trust the null
+
+A null result is only as credible as the effort made to overturn it. Four things make this one credible:
+
+1. **A pre-committed power test.** The gold-in-stress lead was the obvious place a real effect might hide. Rather than stop at the encouraging-but-insignificant number (p = 0.086), the study re-ran it on more than double the data — the cleanest way to give a real effect every chance to appear. It weakened instead (p = 0.31). Effects that dissolve under added power are the signature of small-sample noise.
+
+2. **Robustness to the stress definition.** "Stress" was defined four different ways. The (non-)result barely moves: across twelve stress-regime tests, none produced a cumulative effect whose confidence interval excludes zero. The conclusion does not depend on an arbitrary threshold choice.
+
+3. **One false positive, correctly flagged not featured.** Among those twelve tests, exactly one Granger p-value dipped below 0.05 (Bitcoin, at one threshold, p = 0.035) — but its own impulse-response interval still included zero, and one hit in twelve tests is roughly what pure chance produces. It is reported as a likely false positive, not promoted to a finding.
+
+4. **An honest statement of the binding limitation.** Bitcoin only has price history from 2014, which caps its sample and excludes the 2008 crisis entirely. That is exactly why the gold channel — which *can* reach back to 2000 — was used as the power test. The limitation is named and worked around, not hidden.
+
+::: {.takeaway}
+**Bottom line.** Across the full sample, both market regimes, an extended history, and four stress definitions, money-supply growth shows **no statistically reliable effect on Bitcoin or gold returns at monthly frequency.** The popular "liquidity drives everything" intuition is not supported in this data at this frequency. That is the result — stated plainly, because the honesty is the point.
+:::
+
+## Why the belief persists — and what this does and doesn't prove
+
+### Why people believe money printing drives these assets
+
+The most powerful reason the belief endures is also the most basic statistical trap. Over the past two decades the M2 money supply, Bitcoin, and gold have all trended sharply upward. Plot their *levels* on a chart and they appear to rise together, which looks like overwhelming confirmation that one drives the other. But three things drifting up over time will always look correlated, whether or not they are related at all — that is the textbook definition of a *spurious* relationship between non-stationary trends. This study's stationarity step is precisely where that illusion is dismantled: once each series is converted from its trending *level* into its monthly *change* — the honest way to ask whether one actually moves the other — the apparent co-movement largely vanishes. This levels-versus-changes illusion is the single biggest driver of the popular claim, and it is the one this study directly refutes.
+
+Vivid episodes do the rest of the work. The 2020–21 period is unforgettable: enormous stimulus, the money supply ballooning, and Bitcoin and gold surging not long after. It is easy to read that sequence as cause and effect. But one dramatic co-occurrence, however memorable, is not a systematic relationship — and notably, the stress-regime split in this study *includes* the COVID period, yet conditioning on stress still produced no robust effect. A single striking story is not the same as a pattern that repeats.
+
+Finally, the loudest "liquidity drives everything" commentary often comes from people with a stake in the assets or in products built around them. This is not a charge of bad faith; it is simply that a confident, simple narrative travels further and sells better than an honest one that has to admit the data are noisy and the effect is hard to find. Memorable stories spread faster than careful nulls.
+
+### What this study does and does NOT establish
+
+What it **does** show is specific and, within its scope, firm: at *monthly* frequency, M2 growth has no measurable lead-effect on Bitcoin or gold returns — in calm markets or in stress, robust across four definitions of stress and across a sample extended back to 2000. The short-horizon version of the popular claim does not survive being tested on its own ground.
+
+What it **does not** show is equally important to state plainly — as boundaries of the question asked, not as weaknesses in the answer:
+
+- **Other time horizons are untouched.** M2 is only published monthly, so this says nothing about daily or weekly dynamics, nor about multi-year horizons where slow-building relationships could differ.
+- **It tests M2 specifically, not "liquidity" in general.** The Fed balance sheet, bank reserves, global liquidity measures, and real interest rates are distinct things and may behave differently; "money" here means one well-defined series.
+- **Markets look forward.** Asset prices can reprice on *expectations* of policy well before M2 actually prints, so a true link could be obscured by the fact that the move has already happened by the time the money supply changes.
+- **It does not identify what *does* drive these returns,** nor rank M2 against any alternative. A null on one candidate is not a verdict on the others.
+
+That last point opens the natural next question rather than closing it. These assets clearly do rise over long stretches, and this study is consistent with — though it did not test — the hypothesis that they do so for heterogeneous reasons, with monthly M2 growth unlikely to be the dominant one. Establishing that would require putting M2 alongside competing drivers — real rates, the dollar, risk appetite — in the same framework and letting them compete. This study leaves that door open; it is a natural next step, not a conclusion reached here.
+
+## Technical appendix
+
+::: {.callout-note collapse="true"}
+## Model specification & identification
+
+- **Endogenous variables (ordering):** `M2_growth`, then the asset return(s). The Bitcoin-limited system is three-variable (`M2_growth`, `BTC_ret`, `GOLD_ret`); the extended system is two-variable (`M2_growth`, `GOLD_ret`).
+- **Identification:** orthogonalized (Cholesky) impulse responses. `M2_growth` is ordered first, reflecting that money-supply changes are the slowest-moving / most "upstream" series. Ordering robustness was noted as a candidate further check.
+- **Transforms:** `M2_growth = 100·Δln(M2SL)`; `BTC_ret`, `GOLD_ret = 100·Δln(price)`. The financial-stress index `STLFSI4` is kept in levels as the regime classifier (not differenced).
+- **Exogenous control:** a COVID dummy = 1 over 2020-03…2022-12 enters as an exogenous regressor to absorb the unprecedented 2020–22 money-supply swings, included per-regime only where it varies (≥5 months at each of 0/1).
+
+```{python}
+#| label: tbl-specs
+import pandas as pd
+from IPython.display import HTML
+m = META
+spec = pd.DataFrame([
+    {"Setting": "BTC-limited sample", "Value": f"{m['btc_limited']['start']} → {m['btc_limited']['end']} ({m['btc_limited']['n']} months), lag {m['btc_limited']['lag']}"},
+    {"Setting": "Extended gold sample", "Value": f"{m['gold_extended']['start']} → {m['gold_extended']['end']} ({m['gold_extended']['n']} months), lag {m['gold_extended']['lag']}"},
+    {"Setting": "IRF horizon", "Value": f"{m['irf_horizon']} months"},
+    {"Setting": "Bootstrap", "Value": f"{m['n_boot']} pairs-bootstrap reps, seed {m['seed']}, explosive draws discarded"},
+    {"Setting": "COVID dummy window", "Value": f"{m['covid_dummy'][0]} … {m['covid_dummy'][1]}"},
+])
+HTML(spec.to_html(index=False, classes="table table-sm"))
+```
+:::
+
+::: {.callout-note collapse="true"}
+## Stationarity & the M2 structural break
+
+Levels of M2, BTC, and gold are non-stationary (ADF fails to reject a unit root; KPSS rejects stationarity) — confirming that a levels analysis would be spurious. The differenced series are stationary, with one important exception that turned out to be benign: **M2 growth** registered non-stationary on a plain ADF test (p = 0.16). A **Zivot-Andrews** test, which allows one endogenous structural break, rejected the unit root (p ≈ 0.003) with an estimated break at **2022-01** — the start of the historic post-COVID M2 contraction. A pre-COVID ADF (2014–2019) was decisively stationary. Conclusion: M2 growth is *stationary around a COVID-era structural break*, not genuinely integrated, so it was kept in levels-of-growth and the break absorbed by the COVID dummy rather than second-differenced.
+:::
+
+::: {.callout-note collapse="true"}
+## Regime classification
+
+Stress months are defined by the St. Louis Fed Financial Stress Index (`STLFSI4`), resampled to monthly averages. Four thresholds were used: **A** `> 0` (primary; the index's normal-times baseline), **B** `>` 75th percentile, **C** `>` mean + 1 SD, **D** `> 0.15` (a distinct intermediate cut, since B turned out nearly identical to A in the BTC-limited sample). Threshold C is underpowered (9 stress months in the BTC-limited sample, 26 in the extended) and its estimates are correspondingly unstable; it is reported but not relied upon.
+:::
+
+::: {.callout-note collapse="true"}
+## Seam handling for the regime split
+
+Splitting a monthly time series into non-contiguous regime months would corrupt the lag structure if one naively concatenated the selected months and *then* built lags — pairing a month with a "previous" month that may be a year away. Instead, lagged regressors were built on the **full, contiguous, time-ordered series first**, so every month's lag is its true calendar predecessor; only then were the *dependent* rows subset to each regime. A stress month may legitimately be regressed on a preceding calm month. The only observation lost is the first month of the sample (no predecessor). Because `statsmodels`' built-in VAR re-lags internally and cannot accept a row mask, each regime was estimated by OLS on this pre-lagged design (identical to a VAR when all equations share regressors), with impulse responses built from the estimated companion matrix and residual covariance.
+:::
+
+::: {.callout-note collapse="true"}
+## Inference & validation
+
+- **Granger causality** at lag *p* is a joint F-test that all `L1…Lp.M2_growth` coefficients are zero in the target return's equation.
+- **IRF confidence bands** come from a pairs bootstrap (resampling the (yₜ, yₜ₋₁) observation pairs), which is appropriate for a subset-estimated VAR. Bootstrap draws yielding an explosive companion matrix (max eigenvalue ≥ 1) are discarded as non-sensical; the discarded fraction is tracked (it reached ~16% in the 36-month BTC-limited stress regime, underscoring its fragility).
+- **Model checks:** all reported models are stable (companion eigenvalues inside the unit circle); residual whiteness was checked via Portmanteau/Ljung-Box tests. The full-sample and extended-sample models have clean residuals; the small calm-regime model showed mild residual autocorrelation, noted but not material to the null.
+- All impulse responses and cumulative effects reported here are **orthogonalized**.
+:::
+
+::: {.footnote-source}
+**Data sources.** Money supply: Federal Reserve Economic Data (FRED), series `M2SL`. Financial stress: FRED, St. Louis Fed Financial Stress Index `STLFSI4` (weekly, resampled to monthly). Bitcoin: Yahoo Finance `BTC-USD` (month-end). Gold: Yahoo Finance `GC=F` gold futures (month-end). Sample through May 2026.
+
+**Reproducibility.** All figures and numbers on this page are generated from `exhibit/data/results.json`, which is produced by the analysis pipeline (`src/01`–`src/08`) with a fixed random seed. No values are hand-entered. This page renders to a single self-contained HTML file.
+:::
