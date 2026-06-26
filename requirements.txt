@@ -1,6 +1,0 @@
-pandas
-numpy
-pandas_datareader
-yfinance
-matplotlib
-statsmodels
