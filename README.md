@@ -1,10 +1,12 @@
-# Does Money-Supply Growth Move Bitcoin and Gold?
+# Money Supply, Bitcoin & Gold
 
 I built this project to test a claim that shows up constantly in discussions about Bitcoin and gold: **if the money supply grows, should those assets rise afterward?**
 
 Rather than assume the relationship exists, I tested it directly using monthly data on U.S. M2 growth, Bitcoin returns, gold returns, and financial stress.
 
 The second question was whether the relationship changes during stressed markets. In other words, maybe money-supply growth matters more when investors are actively looking for inflation hedges or safe-haven assets.
+
+What I like most about this project is that the result did not end up being the story I expected. A relationship that initially looked interesting became weaker when I gave it more data and more power.
 
 ## What I did
 
@@ -46,6 +48,10 @@ The analysis itself is organized in `src/`, where the numbered scripts move from
 
 > Note: GitHub will display `exhibit/index.html` as a file rather than as a fully rendered website. For the best viewing experience, the file should be served through GitHub Pages or opened locally in a browser.
 
+## Skills demonstrated
+
+**Time-series econometrics · VAR · regime analysis · robustness testing · Python · financial data · Quarto**
+
 ## Method
 
 The core model is a regime-split VAR using:
@@ -85,11 +91,14 @@ All figures and numbers displayed in the exhibit are generated programmatically 
 - **Bitcoin:** Yahoo Finance `BTC-USD`
 - **Gold:** Yahoo Finance `GC=F`
 
-## Tools
+## Other projects
 
-Python | pandas | NumPy | statsmodels | FRED | Yahoo Finance | Quarto
+- **[Credit Model Validation — Mini MRM Pack](https://github.com/alelancia14/mini-mrm-credit-validation-pack)** — credit risk, validation metrics, and model governance.
+- **[Monetary Policy & Equity Market Volatility](https://github.com/alelancia14/monetary-policy-volatility)** — GARCH, VAR, and market-risk analysis across S&P 500 sectors.
+- **[COVID-19 Lockdowns and Air Quality](https://github.com/alelancia14/lockdown-air-quality)** — difference-in-differences, event studies, and robustness testing.
 
-## Author
+## About me
 
-**Alessandro Lancia**  
-MS Economics (Data Science), Northeastern University
+I’m **Alessandro Lancia**, an MS Economics (Data Science) student at Northeastern University. I’m interested in finance, risk, and applied econometrics, and I like projects where the data are allowed to push back against the original hypothesis.
+
+[GitHub profile](https://github.com/alelancia14)
